@@ -1,0 +1,19 @@
+wpasupplicant_conf_global:
+  - {key: ctrl_interface, value: 'DIR=/var/run/wpa_supplicant GROUP=netdev'}
+  - {key: update_config, value: "1"}
+  - {key: country, value: "PH"}
+wpasupplicant_conf:
+  - dev: "wlan0"
+    network:
+      - conf:
+        - {key: ssid, value: '"YourWifiName"'}
+        - {key: psk, value: '"YourWifiPassword"'}
+
+raspi_config:
+  - {key: ssh, value: true} # enable
+  - {key: wifi_country, value: PH} 
+#  - {key: boot_rom, value: E1 1} # use stable and do update
+
+#packages:
+#  - wget
+#  - curl

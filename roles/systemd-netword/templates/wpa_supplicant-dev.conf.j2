@@ -1,0 +1,18 @@
+# {{ansible_managed}}
+# https://github.com/vbotka/ansible-linux-postinstall/blob/master/templates/wpa-supplicant.conf.j2
+{% for gvar in wpasupplicant_conf_global %}
+{{ gvar.key }}={{ gvar.value }}
+{% endfor %}
+
+{% for net in item.network %}
+{% for nvar in net.conf %}
+{% if loop.first %}
+
+network={
+{% endif %}
+        {{ nvar.key }}={{ nvar.value }}
+{% if loop.last %}
+}
+{% endif %}
+{% endfor %}
+{% endfor %}

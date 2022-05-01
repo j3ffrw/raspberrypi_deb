@@ -1,0 +1,43 @@
+# https://www.raspberrystreet.com/learn/how-to-boot-raspberrypi-from-usb-ssd
+# 
+
+- name: Check if bootrom info
+  shell: rpi-eeprom-update | grep CURRENT | head -1 | grep -oP '(?<=\:\ ).*(?=\ \()'
+  register: eeprom_date
+
+- name: Upgrade eeprom to latest stable if bootroom date older than 2020/09/03
+  shell: raspi-config do_boot_rom E1 0
+  when: eeprom_date.stdout | to_datetime('%a %d %b %H:%M:%S %Z %Y') < ('2020/09/03' | to_datetime('%Y/%m/%d'))
+
+- name: Check boot order
+  shell: rpi-eeprom-config
+  register: eeprom
+
+- name: check sd, check usb, start again 
+  debug:
+    msg: "boot order is set"
+  when: '"BOOT_ORDER=0xf41" in eeprom.stdout'
+
+- name: Set BOOT_ORDER=0xf41
+  block:
+    - name: get current eeprom config
+      shell: rpi-eeprom-config --out /tmp/eeprom.txt
+    - name: update eeprom config
+      lineinfile:
+        path: /tmp/eeprom.txt
+        regex: "^BOOT_ORDER="
+        line: "BOOT_ORDER=0xf41"
+    - name: set eeprom 
+      shell: rpi-eeprom-config --apply /tmp/eeprom.txt
+      register: result
+    - debug:
+        msg: "{{ result.stdout_lines }}"
+    - name: Reboot host and wait for it to restart
+      reboot:
+        msg: "Reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami
+  when: '"BOOT_ORDER=0xf41" not in eeprom.stdout'

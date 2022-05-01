@@ -1,0 +1,93 @@
+# http://www.suptronics.com/miniPCkits/x708_v2.0-software.html
+#
+#
+- name: Install packages
+  apt:
+    pkg:
+      - python3-smbus
+      - i2c-tools
+    update_cache: yes
+
+- name: Enable i2c
+  shell: "raspi-config nonint do_i2c 0"
+  
+- name: read raspi-config
+  shell: "raspi-config nonint get_i2c"
+  register: raspi_config_values
+  check_mode: no
+
+- name: Check if x708 is visible
+  shell: i2cdetect -y 1
+  register: i2c_addresses
+
+- name: "Show raspi_config"
+  debug:
+    msg: "{{ raspi_config_values }}"
+
+# Excerpt from https://raw.githubusercontent.com/suptronics/x708v2.0/main/pwr.sh
+- name: Copy x708 power button shutdown script
+  copy: 
+    src: x708softsd.sh
+    dest: /usr/local/bin/
+    mode: 0765
+
+- name: Copy x708 shutdown poller script 
+  copy: 
+    src: x708pwr.sh
+    dest: /etc/x708pwr.sh
+    mode: 0765
+
+- name: Start power button poller during startup
+  lineinfile:
+    path: /etc/rc.local
+    regex: "^/etc/x708pwr.sh"
+    line: "/etc/x708pwr.sh &"
+    insertbefore: '^exit 0$'
+
+- name: Add power off alias
+  lineinfile:
+    path: /etc/bash.bashrc
+    regex: "^alias x708off"
+    line: "alias x708off='sudo x708softsd.sh'"
+
+- name: Reboot host and wait for it to restart
+  reboot:
+    msg: "Reboot initiated by Ansible"
+    connect_timeout: 5
+    reboot_timeout: 600
+    pre_reboot_delay: 0
+    post_reboot_delay: 30
+    test_command: whoami
+  when: '"36" not in i2c_addresses.stdout'
+
+- name: Check if x708 is now visible
+  shell: i2cdetect -y 1
+  register: i2c_addresses
+
+- name: fail if x708 is still not found
+  fail:
+    msg: "x708 still not found after restart"
+  when: '"36" not in i2c_addresses.stdout'
+
+- name: Copy batt levels monitor script
+  copy: 
+    src: "{{ item }}"
+    dest: /usr/local/bin/
+    mode: 0644
+  loop:
+    - "bat.py"
+    - "pld.py"
+    - "plsd.py"
+    - "fan.py"
+
+- name: run batt monitor levels script 
+  cron:
+    name: "batt levels monitor"
+    special_time: reboot
+    job: "/usr/local/bin/bat.py"
+
+- name: run fan speed controller
+  cron:
+    name: "fan speed controller"
+    special_time: reboot
+    job: "/usr/local/bin/fan.py"

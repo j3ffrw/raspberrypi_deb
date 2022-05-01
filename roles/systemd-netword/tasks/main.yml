@@ -1,0 +1,29 @@
+- name: Create wpasupplicant config
+  template:
+    src: wpa_supplicant-dev.conf.j2
+    dest: "/etc/wpa_supplicant/wpa_supplicant-{{ item.dev }}.conf"
+  loop: "{{ wpasupplicant_conf }}"
+
+- template:
+    src: wireless.network.j2
+    dest: "/etc/systemd/network/wireless.network"
+
+- name: Enable systemd-networkd
+  systemd:
+    state: started
+    enabled: yes
+    name: systemd-networkd
+
+- name: Enable wlan device
+  systemd:
+    state: started
+    enabled: yes
+    name: "wpa_supplicant@{{ item.dev }}"
+  loop: "{{ wpasupplicant_conf }}"
+
+- name: Disable NetworkManager
+  systemd:
+    state: stopped
+    enabled: no
+    name: NetworkManager
+  ignore_errors: yes
