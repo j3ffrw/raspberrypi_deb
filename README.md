@@ -1,6 +1,7 @@
 ### Playbook to provision a [Raspberry Pi OS (64-bit)](https://www.raspberrypi.com/software/operating-systems/#raspberry-pi-os-64-bit) with following hardware add-ons.
 - Power management using [x708 v1.2](https://wiki.geekworm.com/X708-Hardware)
 - USB boot using [x862 v2.0](https://wiki.geekworm.com/X862_V2.0).  https://pibenchmarks.com/benchmark/58555
+- Case with monentary power button [X857-C3](https://wiki.geekworm.com/X857-C3)
 
 
 ### Requirement
@@ -22,3 +23,8 @@ cp vars.yml.sample vars.yml
 ```
 ansible-playbook -i inventory.yml -e @vars.yml provision.yml -l rpi4
 ```
+
+### Image
+![X857-C3 front](front.jpg  "X857-C3 front")
+![X857-C3 inside](inside.jpg  "X857-C3 inside")
+
