@@ -1,0 +1,18 @@
+---
+- hosts: rpi4 
+  become: yes
+  become_user: root
+  become_method: sudo
+  gather_facts: true
+  vars_files:
+    - vars.yml
+
+  roles:
+    - { role: os }
+    - { role: raspberrypi }
+    - { role: systemd-netword }
+    - { role: x708 }
+    - { role: usb_boot}
+    - { role: docker_engine, tags: docker_engine }
+    - { role: deploy_portainer, tags: deploy_portainer }
+

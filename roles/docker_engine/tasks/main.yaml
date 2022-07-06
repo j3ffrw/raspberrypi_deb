@@ -1,14 +1,20 @@
 # https://docs.docker.com/engine/install/debian/
 #
 - name: Download dependencies
-  apt:
-    pkg: 
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-    update_cache: yes
-
+  block:
+    - name: apt dependencies
+      apt:
+        pkg: 
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        update_cache: yes
+    - name: pip dependencies
+      pip:
+        name:
+          - docker
+          - docker-compose
 # Workaround for docker waiting for network
 - name: Mask systemd-networkd-wait-online
   systemd:
@@ -28,12 +34,13 @@
 - name: Install docker engine {{ version_string }} from "apt-cache madison docker-ce"
   apt:
     pkg: 
-      - "docker-ce={{ version_string }}"
-      - "docker-ce-cli={{ version_string }}"
+      - "docker-ce"
+      - "docker-ce-cli"
       - containerd.io
       - docker-compose-plugin
+    state: latest
   vars:
-    version_string: 5:20.10.14~3-0~debian-bullseye
+    version_string: 5:20.10.17~3-0~debian-bullseye
 
 - name: Allow pi user to run docker
   user:

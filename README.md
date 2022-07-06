@@ -21,7 +21,7 @@ cp vars.yml.sample vars.yml
 ```
 1. Run ansible
 ```
-ansible-playbook -i inventory.yml -e @vars.yml provision.yml -l rpi4
+ansible-playbook -i inventory.yml -e @vars.yml playbook.yml -l rpi4
 ```
 
 ### Image

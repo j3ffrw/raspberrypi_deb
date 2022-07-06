@@ -1,0 +1,19 @@
+- name: Create portainer data directory
+  file: 
+    path: /data/portainer_data
+    state: directory
+
+- name: Deploy portainer container
+  docker_container:
+    name: portainer 
+    image: portainer/portainer-ce:{{ portainer_container_tag }}
+    restart_policy: always
+    exposed_ports:
+      - 8000
+      - 9443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /data/portainer_data:/data
+    ports:
+      - 8000:8000
+      - 9443:9443

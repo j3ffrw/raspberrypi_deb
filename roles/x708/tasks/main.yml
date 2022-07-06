@@ -1,6 +1,6 @@
 # http://www.suptronics.com/miniPCkits/x708_v2.0-software.html
-#
-#
+# https://wiki.geekworm.com/X708-Software
+# Tested on x708 v1.2 https://wiki.geekworm.com/X708-Hardware
 - name: Install packages
   apt:
     pkg:
@@ -61,8 +61,9 @@
   when: '"36" not in i2c_addresses.stdout'
 
 - name: Check if x708 is now visible
-  shell: i2cdetect -y 1
+  command: i2cdetect -y 1
   register: i2c_addresses
+  check_mode: no
 
 - name: fail if x708 is still not found
   fail:
@@ -73,7 +74,7 @@
   copy: 
     src: "{{ item }}"
     dest: /usr/local/bin/
-    mode: 0644
+    mode: 0754
   loop:
     - "bat.py"
     - "pld.py"

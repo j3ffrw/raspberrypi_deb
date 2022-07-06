@@ -1,0 +1,20 @@
+- name: set raspi-config
+  shell: "raspi-config nonint do_{{ item.key }} {{ (item.value is boolean) | ternary((0 if item.value else 1), item.value ) }}"
+  register: raspi_config_set
+  loop: "{{ raspi_config }}"
+
+- name: read raspi-config
+  shell: "raspi-config nonint get_{{ item.key }}"
+  register: raspi_config_values
+  loop: "{{ raspi_config }}"
+  ignore_errors: yes
+  check_mode: no
+  when:  item.value | string | split(" ") | length < 2
+
+- name: "Show raspi_config stdout"
+  debug: 
+    msg: "{{ raspi_config_set.results | json_query('[*].{config: item.key, stdout: stdout}') }}" 
+
+- name: "Show raspi_config get"
+  debug: 
+    msg: "{{ raspi_config_values.results | json_query('[*].{config: item.key, value: stdout}')  }}" 
