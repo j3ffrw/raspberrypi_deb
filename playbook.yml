@@ -13,6 +13,7 @@
     - { role: systemd-netword }
     - { role: x708 }
     - { role: usb_boot}
+    - { role: usbc_mode, tags: usbc_mode }
     - { role: docker_engine, tags: docker_engine }
     - { role: deploy_portainer, tags: deploy_portainer }
 

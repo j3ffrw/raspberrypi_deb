@@ -81,14 +81,21 @@
     - "plsd.py"
     - "fan.py"
 
+- name: Create x708 logs directory
+  file: 
+    path: /var/log/x708
+    state: directory
+
 - name: run batt monitor levels script 
   cron:
     name: "batt levels monitor"
     special_time: reboot
-    job: "/usr/local/bin/bat.py"
+    job: |
+      /usr/local/bin/bat.py 2>&1 | /usr/bin/logger -t batt --no-act -s 2>&1 | sed 's/^<[0-9]\+>//' >> /var/log/x708/batt.log
 
 - name: run fan speed controller
   cron:
     name: "fan speed controller"
     special_time: reboot
-    job: "/usr/local/bin/fan.py"
+    job: |
+      /usr/local/bin/fan.py 2>&1 | /usr/bin/logger -t fan --no-act -s 2>&1 | sed 's/^<[0-9]\+>//' >> /var/log/x708/fan.log

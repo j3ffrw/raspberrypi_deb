@@ -1,0 +1,7 @@
+# https://techoverflow.net/2022/04/19/how-to-enable-usb-c-host-mode-on-raspberry-pi/
+
+- name: Configure USB C port
+  lineinfile:
+    path: /boot/config.txt
+    regex: "^dtoverlay=dwc2"
+    line: "dtoverlay=dwc2,dr_mode={{ usbc_mode|default('host') }}"
