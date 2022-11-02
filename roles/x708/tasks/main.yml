@@ -99,3 +99,8 @@
     special_time: reboot
     job: |
       /usr/local/bin/fan.py 2>&1 | /usr/bin/logger -t fan --no-act -s 2>&1 | sed 's/^<[0-9]\+>//' >> /var/log/x708/fan.log
+
+- name: Create logrotate config
+  template:
+    src: x708.j2
+    dest: /etc/logrotate.d/x708
