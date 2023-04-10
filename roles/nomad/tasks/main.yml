@@ -1,0 +1,12 @@
+---
+- name: Install and configure Nomad
+  ansible.builtin.include_tasks:
+    file: install.yml
+
+- name: flush
+  ansible.builtin.meta: flush_handlers
+
+- name: Bootstrap Nomad
+  ansible.builtin.include_tasks:
+    file: bootstrap.yml
+  when: nomad_server_config.acl.enabled | bool

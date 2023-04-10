@@ -1,0 +1,7 @@
+[Unit]
+Wants=consul.service
+After=consul.service
+
+[Service]
+ExecStart=
+ExecStart={{ nomad_bin_path }} agent -config {{ nomad_data_path }}/nomad.d

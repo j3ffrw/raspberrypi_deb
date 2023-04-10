@@ -1,0 +1,43 @@
+---
+- name: Wait for nomad to be available
+  ansible.builtin.wait_for: 
+    port: "{{ nomad_server_config.ports.http }}"
+    delay: "10"
+    timeout: "60"
+    state: "started"
+
+- name: Create temp file for bootstrap token
+  block:
+    - name: tempfile
+      ansible.builtin.tempfile:
+        state: file
+        suffix: token
+      register: tempfile_1
+
+    - name: Create token for acl bootstrap
+      ansible.builtin.template:
+        src: bootstrap_token.j2
+        dest: "{{ tempfile_1.path }}"
+
+    - name: Try bootstrapping nomad acl 
+      ansible.builtin.command:
+        cmd: "nomad acl bootstrap 
+          {{ nomad_tls_enabled | ternary(nomad_cli_config,'')}}
+          {{ tempfile_1.path }}"
+      register: bootstrap_reg
+
+    - name: Cleaup token file
+      ansible.builtin.file:
+        path: "{{ tempfile_1.path }}"
+        state: absent
+      when: tempfile_1.path is defined
+  rescue:
+    - name: Verify if ACL bootstrap is done 
+      ansible.builtin.command:
+        cmd: "nomad status
+          {{ nomad_tls_enabled | ternary(nomad_cli_config,'')}}
+          -token {{ nomad_acl_bootstrap_token }}"
+      register: status_reg
+      failed_when:
+        - status_reg.rc == 1 
+        - '"ACL bootstrap already done" in bootstrap_reg.stderr'

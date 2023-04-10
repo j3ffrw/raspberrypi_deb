@@ -1,0 +1,14 @@
+---
+- name: Reload sysctl
+  ansible.builtin.command:
+    cmd: sysctl -p --system
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart nomad
+  ansible.builtin.systemd:
+    name: nomad
+    state: restarted
+    enabled: true

@@ -1,0 +1,35 @@
+{{ ansible_managed | comment }}
+server {
+  enabled = true
+  bootstrap_expect = {{ nomad_server_config.bootstrap_expect }}
+}
+data_dir         = "{{ nomad_server_config.data_dir }}"
+datacenter       = "{{ nomad_server_config.datacenter }}"
+bind_addr        = "{{ nomad_server_config.bind_addr }}"
+ports {
+{% for port in nomad_server_config.ports | dict2items %}
+  {{ port.key }} = {{ port.value }}
+{% endfor %}
+}
+consul {
+  address = "{{ nomad_server_config.consul.address }}"
+}
+acl {
+  enabled    = {{ nomad_server_config.acl.enabled | bool | lower }}
+  token_ttl  = "30s"
+  policy_ttl = "60s"
+}
+
+{% if nomad_tls_enabled %}
+tls {
+  http = {{ nomad_server_config.tls.http | bool | lower }}
+  rpc  = {{ nomad_server_config.tls.rpc | bool | lower }}
+
+{% for cert in nomad_server_config.tls.certs | dict2items %}
+  {{ cert.key }} = "{{ cert.value.path}}"
+{%endfor%}
+
+  verify_server_hostname = {{ nomad_server_config.tls.verify_server_hostname | bool | lower }}
+  verify_https_client    = {{ nomad_server_config.tls.verify_https_client | bool | lower }}
+}
+{% endif %}

@@ -1,0 +1,123 @@
+---
+- name: Setup repositories
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Download key
+      ansible.builtin.get_url:
+        url: "{{ item.key_url | default(omit) }}"
+        dest: /etc/apt/trusted.gpg.d/{{ item.name }}.asc
+      loop: "{{ nomad_repositories[ansible_os_family] }}"
+
+    - name: Add apt repositories 
+      ansible.builtin.apt_repository:
+        repo: "{{ item.repo }}"
+        update_cache: true
+      loop: "{{ nomad_repositories[ansible_os_family] }}"
+
+- name: Ensure group "nomad" exists
+  ansible.builtin.group:
+    name: "{{ nomad_group }}"
+    state: present
+    gid: "{{ nomad_group_gid }}"
+
+- name: Ensure user "nomad" exists
+  ansible.builtin.user:
+    name: "{{ nomad_user }}"
+    state: present
+    uid: "{{ nomad_user_uid }}"
+    group: "{{ nomad_group }}"
+    groups: "{{ nomad_user_additional_groups }}"
+    shell: /bin/false
+    home: "{{ nomad_data_path }}/nomad.d"
+
+- name: Create required nomad directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    recurse: "{{ item.recurse | default(false) }}"
+    state: directory
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+  loop: "{{ nomad_directories }}"
+
+- name: Install nomad packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+  loop: "{{ nomad_packages[ansible_os_family] }}"
+
+- name: Install plugins
+  ansible.builtin.include_tasks:
+    file: cni.yml
+
+- name: Tune OS
+  ansible.builtin.template:
+    src: "bridge.conf.j2"
+    dest: "/etc/sysctl.d/bridge.conf"
+  notify: "Reload sysctl"
+
+- block: 
+  - name: Create nomad client config
+    ansible.builtin.template:
+      src: "client.hcl.j2"
+      dest: "{{ nomad_data_path }}/nomad.d/client.hcl"
+      owner: "{{ nomad_user }}"
+      group: "{{ nomad_group }}"
+
+  - name: Create nomad client TLS files
+    when: nomad_tls_enabled | bool
+    ansible.builtin.template:
+      src: "cert.pem.j2"
+      dest: "{{ item.value.path }}"
+      owner: "{{ nomad_user }}"
+      group: "{{ nomad_group }}"
+    loop: "{{ nomad_client_config.tls.certs | dict2items }}"
+    vars:
+      content: "{{ item.value.content }}"
+  notify: "Restart nomad"
+
+- block:
+  - name: Create nomad server config
+    ansible.builtin.template:
+      src: "server.hcl.j2"
+      dest: "{{ nomad_data_path }}/nomad.d/server.hcl"
+      owner: "{{ nomad_user }}"
+      group: "{{ nomad_group }}"
+  
+  - name: Create nomad server TLS files
+    when: nomad_tls_enabled | bool
+    ansible.builtin.template:
+      src: "cert.pem.j2"
+      dest: "{{ item.value.path }}"
+      owner: "{{ nomad_user }}"
+      group: "{{ nomad_group }}"
+    loop: "{{ nomad_server_config.tls.certs | dict2items }}"
+    vars:
+      content: "{{ item.value.content }}"
+  notify: "Restart nomad"
+
+- name: Create nomad cli TLS files
+  when: 
+    - nomad_tls_enabled | bool
+    - item.value.content is defined
+  ansible.builtin.template:
+    src: "cert.pem.j2"
+    dest: "{{ item.value.path }}"
+    owner: "{{ nomad_user }}"
+    group: "{{ nomad_group }}"
+  loop: "{{ nomad_cli_tls_config | dict2items }}"
+  vars:
+    content: "{{ item.value.content }}"
+
+- name: Set nomad cli env vars
+  when: 
+    - nomad_tls_enabled | bool
+  ansible.builtin.lineinfile:
+    path: /root/.bashrc
+    search_string: "{{ item.value.env_name }}"
+    line: "export {{ item.value.env_name }}={{ item.value.path }}"
+  loop: "{{ nomad_cli_tls_config | dict2items }}"
+
+- name: Create nomad systemd override
+  ansible.builtin.template:
+    src: "nomad_systemd_override.conf.j2"
+    dest: "/etc/systemd/system/nomad.service.d/override.conf"
+  notify: "Reload systemd"

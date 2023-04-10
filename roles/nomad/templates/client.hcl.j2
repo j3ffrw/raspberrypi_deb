@@ -1,0 +1,32 @@
+{{ ansible_managed | comment }}
+client {
+  enabled = true
+  network_interface = "{{ nomad_client_config.network_interface }}"
+  server_join {
+    retry_join = [
+      {{ nomad_client_config.server_join.retry_join | map("regex_replace", "(.*)", "\"\\1") | join(",") }}
+    ]
+    retry_max = "{{ nomad_client_config.server_join.retry_max }}"
+    retry_interval = "{{ nomad_client_config.server_join.retry_interval }}"
+  }
+{% for host_volume in nomad_host_volumes %}
+  host_volume "{{ host_volume.name }}" {
+    path      = "{{ host_volume.path }}"
+    read_only = {{ host_volume.read_only | bool | lower }}
+  }
+{% endfor %}
+}
+
+{% if nomad_tls_enabled %}
+tls {
+  http = {{ nomad_client_config.tls.http | bool | lower }}
+  rpc  = {{ nomad_client_config.tls.rpc | bool | lower }}
+
+{% for cert in nomad_client_config.tls.certs | dict2items %}
+  {{ cert.key }} = "{{ cert.value.path }}"
+{%endfor%}
+
+  verify_server_hostname = {{ nomad_client_config.tls.verify_server_hostname | bool | lower }}
+  verify_https_client    = {{ nomad_client_config.tls.verify_https_client | bool | lower }}
+}
+{% endif %}

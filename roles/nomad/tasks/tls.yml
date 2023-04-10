@@ -1,0 +1,7 @@
+- name: Drop
+  ansible.builtin.template:
+    src: "bridge.conf.j2"
+    dest: "/etc/sysctl.d/bridge.conf"
+  notify: "Reload sysctl"
+  loop:
+    - file: nomad-agent-ca.pem

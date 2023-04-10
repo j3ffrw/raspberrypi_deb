@@ -1,0 +1,6 @@
+---
+- name: Install CNI plugin
+  ansible.builtin.unarchive:
+    src: "{{ nomad_cni_plugin_url }}"
+    dest: /opt/cni/bin
+    remote_src: yes

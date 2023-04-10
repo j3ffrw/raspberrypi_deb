@@ -1,0 +1,77 @@
+---
+nomad_data_path: "/data/nomad"
+nomad_bin_path: "/usr/bin/nomad"
+nomad_directories:
+  - path: "{{ nomad_data_path }}/conf"
+  - path: "{{ nomad_data_path }}/data"
+    owner: "{{ nomad_user }}"
+    group: "{{ nomad_group }}"
+  - path: "{{ nomad_data_path }}/jobs"
+  - path: "{{ nomad_data_path }}/nomad.d"
+    recurse: true
+    owner: "{{ nomad_user }}"
+    group: "{{ nomad_group }}"
+  - path: "/etc/systemd/system/nomad.service.d"
+  - path: "/opt/cni/bin"
+    recurse: true
+    owner: "{{ nomad_user }}"
+    group: "{{ nomad_group }}"
+nomad_repositories:
+  Debian:
+    - name: hashicorp 
+      key_url: https://apt.releases.hashicorp.com/gpg 
+      repo: "deb [signed-by=/etc/apt/trusted.gpg.d/hashicorp.asc] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+nomad_packages:
+  Debian:
+    - nomad=1.5.3-1
+
+nomad_user: "nomad"
+nomad_user_uid: "999"
+nomad_user_additional_groups:
+  - docker
+nomad_group: "nomad"
+nomad_group_gid: "994"
+nomad_server_config:
+  data_dir: "{{ nomad_data_path }}/data"
+  bind_addr: "0.0.0.0"
+  datacenter: "DC0"
+  bootstrap_expect: 1
+  ports:
+    http: "4646"
+    rpc: "4647"
+    serf: "4648"
+  consul:
+    address: "127.0.0.1:8500"
+  acl:
+    enabled: false
+nomad_tls_enabled: false
+nomad_client_config:
+  enabled: true
+  network_interface: "{{ ansible_default_ipv4.interface }}"
+  server_join:
+    retry_join:
+      - "127.0.0.1"
+    retry_max: "3"
+    retry_interval: "15s"
+nomad_cli_tls_config: {}
+  #  address:
+  #    env_name: "NOMAD_ADDR"
+  #    path: "https://127.0.0.1:4646"
+  #  ca-cert:
+  #    env_name: "NOMAD_CACERT"
+  #    path: "{{ nomad_data_path }}/nomad.d/nomad-agent-ca.pem"
+  #    content: "{{ nomad_agent_ca_pem }}"
+nomad_cli_config: 
+  "{% for option in nomad_cli_tls_config | dict2items %}
+   -{{option.key}}={{option.value.path}}  
+   {% endfor %}
+  "
+nomad_host_volumes: []
+  #  - name: "gitea-data"
+  #    path: "{{ nomad_data_path }}/data/gitea/data"
+  #    read_only: false
+  #  - name: "gitea-db"
+  #    path: "{{ nomad_data_path }}/data/gitea/db"
+  #    read_only: false
+
+nomad_cni_plugin_url: "https://github.com/containernetworking/plugins/releases/download/v1.0.0/cni-plugins-linux-{{ (ansible_architecture == 'aarch64') | ternary('arm64', 'amd64') }}-v1.0.0.tgz"
